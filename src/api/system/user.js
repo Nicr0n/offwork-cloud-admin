@@ -20,3 +20,11 @@ export function getUserInfo(userId) {
   })
 }
 
+export function updateUserInfo(userId, userInfo) {
+  return request({
+    url: '/user-center/api/system/user/' + userId,
+    method: 'put',
+    data: userInfo
+  })
+}
+

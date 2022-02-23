@@ -38,7 +38,7 @@
           align="center"
         >
           <template slot-scope="scope">
-            <el-switch v-model="scope.row.status" :active-value="1" :inactive-value="0" /></template>
+            <el-switch v-model="scope.row.status" :active-value="1" :inactive-value="0" @change="onSwitchChange(scope.row.status,scope.row.userId)" /></template>
         </el-table-column>
         <el-table-column
           prop="lastLoginTime"
@@ -95,6 +95,16 @@
             :disabled="true"
           />
         </el-form-item>
+        <el-form-item label="角色">
+          <el-select v-model="userDetail.roleIDList" multiple placeholder="请选择" :disabled="true">
+            <el-option
+              v-for="item in userDetailSelectorRoleList"
+              :key="item.roleId"
+              :label="item.name"
+              :value="item.roleId"
+            />
+          </el-select>
+        </el-form-item>
         <el-form-item label="账户状态">
           <el-switch v-model="userDetail.status" :active-value="1" :inactive-value="0" :disabled="true" />
         </el-form-item>
@@ -140,6 +150,16 @@
             placeholder="选择日期"
           />
         </el-form-item>
+        <el-form-item label="角色">
+          <el-select v-model="userDetailUpdate.roleIDList" multiple placeholder="请选择">
+            <el-option
+              v-for="item in userDetailUpdateSelectorRoleList"
+              :key="item.roleId"
+              :label="item.name"
+              :value="item.roleId"
+            />
+          </el-select>
+        </el-form-item>
         <el-form-item label="账户状态">
           <el-switch v-model="userDetailUpdate.status" :active-value="1" :inactive-value="0" />
         </el-form-item>
@@ -154,7 +174,8 @@
 </template>
 
 <script>
-import { getUserPage, getUserInfo } from '@/api/system/user'
+import { getUserPage, getUserInfo, updateUserInfo } from '@/api/system/user'
+import { getRoleList } from '@/api/system/role'
 export default {
   data() {
     return {
@@ -174,15 +195,19 @@ export default {
       userDetail: {},
       // 用户修改显示标识
       userDetailUpdateDialogVisiable: false,
-      userDetailUpdate: {}
+      // 用户更新对话框详情
+      userDetailUpdate: {},
+      // 用户更新对话框角色列表
+      userDetailUpdateSelectorRoleList: [],
+      userDetailSelectorRoleList: []
     }
   },
   created() {
-    this.fetchData()
+    this.initData()
   },
   methods: {
     // 初始化数据
-    fetchData() {
+    initData() {
       const pageParam = {
         page: this.page,
         perPage: this.pageSize
@@ -196,18 +221,22 @@ export default {
     // 修改每页获取的记录数
     handleSizeChange(val) {
       this.pageSize = val
-      this.fetchData()
+      this.initData()
     },
     // 修改当前页数
     handleCurrentChange(val) {
       this.page = val
-      this.fetchData()
+      this.initData()
     },
     // 打开用户详情对话框
     onClickOpenUserDetailDialog(userId) {
       getUserInfo(userId).then(response => {
         const { data } = response
         this.userDetail = data
+        getRoleList().then(response => {
+          const { data } = response
+          this.userDetailSelectorRoleList = data
+        })
         this.userDetailDialogVisiable = true
       })
     },
@@ -216,15 +245,45 @@ export default {
       getUserInfo(userId).then(response => {
         const { data } = response
         this.userDetailUpdate = data
-        const formData = {
-          username: data.username
-        }
-        console.log(formData)
+        getRoleList().then(response => {
+          const { data } = response
+          this.userDetailUpdateSelectorRoleList = data
+        })
         this.userDetailUpdateDialogVisiable = true
       })
     },
     UpdateUserDetail() {
-      console.log(this.userDetailUpdate)
+      const formData = {
+        username: this.userDetailUpdate.username,
+        nickName: this.userDetailUpdate.nickName,
+        gender: this.userDetailUpdate.gender,
+        telephone: this.userDetailUpdate.telephone,
+        email: this.userDetailUpdate.email,
+        birthday: this.userDetailUpdate.birthday,
+        status: this.userDetailUpdate.status,
+        roleIDList: this.userDetailUpdate.roleIDList
+      }
+      updateUserInfo(this.userDetailUpdate.userId, formData).then(response => {
+        console.log(response)
+        this.initData()
+        this.userDetailUpdateDialogVisiable = false
+        this.$message({
+          message: response.message,
+          type: 'success'
+        })
+      })
+    },
+    onSwitchChange(status, userId) {
+      const formData = {
+        status: status
+      }
+      updateUserInfo(userId, formData).then(response => {
+        this.initData()
+        this.$message({
+          message: response.message,
+          type: 'success'
+        })
+      })
     },
     handleSelectionChange() {
 
