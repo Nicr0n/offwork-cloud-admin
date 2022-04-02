@@ -27,4 +27,3 @@ export function updateUserInfo(userId, userInfo) {
     data: userInfo
   })
 }
-
